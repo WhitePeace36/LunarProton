@@ -123,10 +123,12 @@ do_prepare() {
 	fi
 
 	_l_msg2 "Patch set ${set_dir##*/}"
-	local toggle comp file applied=0
+	local toggle comp file applied=0 target
 	while read -r toggle comp file; do
 		if _l_true "${!toggle:-false}"; then
-			pl_apply "$PL_SRC/$comp" "$set_dir/$file"
+			target="$PL_SRC/$comp"
+			[[ "$comp" == top ]] && target="$PL_SRC"
+			pl_apply "$target" "$set_dir/$file"
 			_l_msg2 "  + $comp: $(basename "$file") ($toggle)"
 			applied=$((applied + 1))
 		else

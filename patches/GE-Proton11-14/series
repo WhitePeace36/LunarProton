@@ -1,5 +1,7 @@
 # Patches for GE-Proton11-14, applied after GE's own protonprep script.
 #
-# toggle               component  patch (relative to this directory)
-_patch_sud_upcall      wine       wine/0001-ntdll-Use-the-Syscall-User-Dispatch-direct-upcall-mode.patch
-_patch_fast_xsave      wine       wine/0002-ntdll-Save-the-vector-state-without-xsavec64-when-AVX-is-unused.patch
+# toggle                 component  patch (relative to this directory)
+# component "top" is the GE-Proton tree itself.
+_patch_sud_upcall        wine       wine/0001-ntdll-Use-the-Syscall-User-Dispatch-direct-upcall-mode.patch
+_patch_fast_xsave        wine       wine/0002-ntdll-Save-the-vector-state-without-xsavec64-when-AVX-is-unused.patch
+_patch_fix_rebuild       top        top/0003-Makefile-keep-the-autoreconf-output-of-sbc-and-xz.patch

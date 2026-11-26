@@ -1,0 +1,105 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Timon Stipkovits <timon2201@gmail.com>
+Date: Thu, 26 Nov 2026 23:55:00 +0100
+Subject: [PATCH] Makefile: keep the autoreconf output of sbc and xz in the
+ build copy.
+
+sbc and xz have no configure in git, so rules-configure runs autoreconf
+in their build copies (build/src-sbc, build/src-xz).  Neither has
+<PKG>_SOURCE_ARGS, so the source sync sees configure, Makefile.in,
+aclocal.m4, build-aux/missing etc. as files missing from the origin,
+calls the copy dirty on every make and deletes them with rsync
+--delete, without running autoreconf again.  Every make after the first
+one in the same build directory then fails:
+
+  /bin/bash: .../build/src-sbc/build-aux/missing: No such file or directory
+  make[1]: *** [Makefile:480: .../build/src-sbc/Makefile.in] Error 127
+
+and, with sbc fixed, the same for xz (src-xz/aclocal.m4).
+
+Exclude the generated files from the sync, as VKD3D_SOURCE_ARGS does for
+vkd3d.  xz keeps files of its own in build-aux/, m4/ and po/, so only
+the generated ones are named there.  Real source changes are still
+synced.  The other packages built with rules-configure either have
+configure in git (ffmpeg) or already have SOURCE_ARGS (openfst);
+libpcap's copy is re-synced too, but only restores its own config.guess,
+config.sub and install-sh, which does not break the build.
+
+Assisted-by: Claude:claude-opus-5-5
+---
+--- a/Makefile.in
++++ b/Makefile.in
+@@ -248,6 +248,18 @@
+ # SBC encoder for Bluetooth DualShock 4 speaker audio, loaded at runtime by
+ # winepulse.
+ 
++# configure and the rest of autoreconf's output are generated in the build
++# copy (rules-configure, no configure in git): keep the source sync from
++# deleting them, or every later make in the same build directory fails with
++# "build-aux/missing: No such file or directory".
++SBC_SOURCE_ARGS = \
++  --exclude aclocal.m4 \
++  --exclude autom4te.cache \
++  --exclude build-aux/ \
++  --exclude config.h.in \
++  --exclude configure \
++  --exclude Makefile.in \
++
+ SBC_CONFIGURE_ARGS := \
+ 	--enable-shared \
+ 	--disable-static \
+@@ -272,6 +284,54 @@
+ ## FFmpeg
+ ##
+ 
++# configure and the rest of autoreconf's output are generated in the build
++# copy (rules-configure, no configure in git): keep the source sync from
++# deleting them, or every later make in the same build directory fails with
++# "build-aux/missing: No such file or directory".  build-aux/, m4/ and po/
++# also hold files from git, so the generated ones are named.
++XZ_SOURCE_ARGS = \
++  --exclude /ABOUT-NLS \
++  --exclude /aclocal.m4 \
++  --exclude /autom4te.cache \
++  --exclude /config.h.in \
++  --exclude /configure \
++  --exclude Makefile.in \
++  --exclude /build-aux/compile \
++  --exclude /build-aux/config.guess \
++  --exclude /build-aux/config.rpath \
++  --exclude /build-aux/config.sub \
++  --exclude /build-aux/depcomp \
++  --exclude /build-aux/install-sh \
++  --exclude /build-aux/ltmain.sh \
++  --exclude /build-aux/missing \
++  --exclude /build-aux/test-driver \
++  --exclude /m4/build-to-host.m4 \
++  --exclude /m4/gettext.m4 \
++  --exclude /m4/host-cpu-c-abi.m4 \
++  --exclude /m4/iconv.m4 \
++  --exclude /m4/intlmacosx.m4 \
++  --exclude /m4/lib-ld.m4 \
++  --exclude /m4/lib-link.m4 \
++  --exclude /m4/lib-prefix.m4 \
++  --exclude /m4/libtool.m4 \
++  --exclude /m4/ltoptions.m4 \
++  --exclude /m4/ltsugar.m4 \
++  --exclude /m4/ltversion.m4 \
++  --exclude /m4/lt~obsolete.m4 \
++  --exclude /m4/nls.m4 \
++  --exclude /m4/po.m4 \
++  --exclude /m4/progtest.m4 \
++  --exclude /po/Makefile.in.in \
++  --exclude /po/Makevars.template \
++  --exclude /po/Rules-quot \
++  --exclude /po/boldquot.sed \
++  --exclude /po/en@boldquot.header \
++  --exclude /po/en@quot.header \
++  --exclude /po/fetch-po \
++  --exclude /po/insert-header.sed \
++  --exclude /po/quot.sed \
++  --exclude /po/remove-potcdate.sed \
++
+ XZ_CONFIGURE_ARGS := \
+ 	--enable-shared \
+ 	--disable-static \

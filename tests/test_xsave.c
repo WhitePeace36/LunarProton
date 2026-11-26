@@ -163,8 +163,20 @@ int main(void)
 	unsigned char *usd = mmap((void *)0x7ffe0000, 4096, PROT_READ | PROT_WRITE,
 				  MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED_NOREPLACE, -1, 0);
 	if (usd != (void *)0x7ffe0000) { perror("user_shared_data"); return 1; }
-	__cpuid_count(0xd, 1, a, b, c, d);
-	if (!(a & 2) || !(a & 4)) { printf("needs XSAVEC and XGETBV(1)\n"); return 1; }
+	/* Without XSAVEC and XGETBV(1) Wine never turns the fast save on (see
+	 * init_xinuse_fast_save) and there is no xsavec64 to compare against:
+	 * the patch is inactive on such a CPU, so skip (exit 77) instead of
+	 * failing.  Leaf 0xd is only meaningful with OSXSAVE set. */
+	__cpuid(1, a, b, c, d);
+	if (__get_cpuid_max(0, NULL) >= 0xd && (c & (1u << 27)))
+		__cpuid_count(0xd, 1, a, b, c, d);
+	else
+		a = 0;
+	if (!(a & 2) || !(a & 4)) {
+		printf("xsave: SKIPPED, this CPU has no %s (Wine keeps its own save path, the patch stays inactive)\n",
+		       !(a & 2) ? "XSAVEC" : "XGETBV(1)");
+		return 77;
+	}
 	usd[0x285] = 1;				/* PF_XSAVE_ENABLED */
 	*(uint32_t *)(usd + 0x3d8) = 7;		/* x87, SSE, AVX */
 	*(uint32_t *)(usd + 0x3ec) = 2;		/* XSAVEC */

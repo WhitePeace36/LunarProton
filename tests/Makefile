@@ -26,7 +26,7 @@ upcall: $(GEN)/handlers.inc
 
 xsave: $(GEN)/dispatcher.inc
 	$(CC) -O2 -mno-red-zone -Wall -Wno-unused-function -I $(GEN) test_xsave.c -o $(GEN)/test_xsave
-	$(GEN)/test_xsave
+	@$(GEN)/test_xsave; r=$$?; [ $$r -eq 0 ] || [ $$r -eq 77 ]	# 77: skipped, CPU without XSAVEC
 
 bench: $(GEN)/dispatcher.inc
 	$(CC) -O2 -mno-red-zone -Wall -Wno-unused-function -I $(GEN) bench_qpc.c -o $(GEN)/bench_qpc

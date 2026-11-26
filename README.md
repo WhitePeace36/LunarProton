@@ -20,13 +20,19 @@ puts the result into Steam's `compatibilitytools.d`. Restart Steam and pick
 |---|---|---|
 | `_patch_sud_upcall` | Games that make raw Windows syscalls (anti-cheat, e.g. THE FINALS: 100–200k per second) are caught by Syscall User Dispatch. Instead of a SIGSYS signal for each one (~0.8–0.9 µs), the kernel jumps straight to Wine's dispatcher and returns with SYSRET. | linux-lunar patch 0014 (or CachyOS/linux#15) in the running kernel. Other kernels: Wine notices and keeps using SIGSYS, so the build works everywhere. |
 | `_patch_fast_xsave` | Every Windows syscall saves the vector registers. When AVX is not in use (XINUSE), Wine stores the same bytes with plain moves instead of `xsavec64` (GE dispatcher benchmark: ~103 → ~76 ns per syscall). Falls back to `xsavec64` whenever the AVX state or the x87 register stack is live. | Any kernel. `WINE_DISABLE_FAST_XSAVE=1` turns it off for one game. |
+| `_patch_fix_rebuild` | Build fix for GE's Makefile: its source sync deleted the generated autotools files of sbc and xz, so every build after the first in the same `build/` failed (`build-aux/missing: No such file or directory`). No effect on the built Proton. | Nothing. |
 
-Both are on by default. GE's game-specific syscall hacks (EOS, NASCAR 25)
+All three are on by default. GE's game-specific syscall hacks (EOS, NASCAR 25)
 take precedence over the upcall, as they did over SIGSYS.
 
 To check that the upcall is in use, start a game with
 `WINEDEBUG=+seh %command%` and look for `SUD direct-upcall mode 2 available`
 in the log (1 = the CachyOS RCX variant, no line = SIGSYS).
+
+To see the effect, compare the game thread's system time with stock GE-Proton
+in the same scene: `sudo tools/threadtime.sh <game.exe> 30` prints the user
+and system time of the busiest threads over 30 seconds. With the upcall the
+system share of the thread making the raw syscalls should drop clearly.
 
 ## Requirements
 

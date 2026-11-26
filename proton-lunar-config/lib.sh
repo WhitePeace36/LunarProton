@@ -40,7 +40,7 @@ pl_validate_options() {
 	[[ "$_ge_tag" =~ ^[A-Za-z0-9._-]+$ ]] || _l_die "_ge_tag \"$_ge_tag\" is not a valid tag name"
 	[[ "$_patch_set" == auto || "$_patch_set" == fallback ]] \
 		|| _l_die "_patch_set must be auto or fallback (is \"$_patch_set\")"
-	for o in _patch_sud_upcall _patch_fast_xsave _user_patches _ccache _install _keep_tarball; do
+	for o in _patch_sud_upcall _patch_fast_xsave _patch_fix_rebuild _user_patches _ccache _install _keep_tarball; do
 		_pl_bool "$o"
 	done
 	[[ -z "$_container_engine" || "$_container_engine" == podman || "$_container_engine" == docker ]] \
