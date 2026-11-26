@@ -1,0 +1,5 @@
+/src/
+/build/
+/logs/
+/tests/gen/
+/userpatches/*/
